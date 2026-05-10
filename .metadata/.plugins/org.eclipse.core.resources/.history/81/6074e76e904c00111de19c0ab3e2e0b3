@@ -1,0 +1,34 @@
+#include "ADS1115.h"
+
+
+// 16-bit ADC Module
+uint8_t module_address = 0x48;
+
+// write; Config register , conversion register:
+//uint8_t config_data[3] = { 0x01 , 0xC2 , 0x83 };
+uint8_t config_data[3] = { 0x01 , 0xC0 , 0x83 };     // larger range
+uint8_t pointer_address_conv = 0x00;
+
+//Read;  conversion data:
+uint8_t adc_data[2] = {0};
+
+
+int16_t read_adc_module(void){
+
+	HAL_I2C_Master_Transmit(&hi2c1, module_address << 1, config_data, 3 , 100); // shift left for address and w/r
+
+	HAL_Delay(10);
+
+	HAL_I2C_Master_Transmit(&hi2c1, module_address << 1, &pointer_address_conv, 1 , 100);
+	HAL_I2C_Master_Receive(&hi2c1, (module_address << 1 | 0x01), adc_data, 2, 100);	// OR with 0x01 To read
+	int16_t temp_adc_data = (uint16_t) adc_data[0] << 8 | adc_data[1];// MSB and LSB combination
+
+	//	  temp_adc_data = (uint16_t) adc_buffer_temp >> 7;   // no need, gives us 16 bit
+
+	return temp_adc_data;
+}
+
+float analog_to_voltage(int16_t adc_val){
+//	return ((float) adc_val * 4.096) / 32768.0f;     // PGA : 0xC2
+	return ((float) adc_val * 6.144f) / 32768.0f;	 // PGA : 0xC0
+}
